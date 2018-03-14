@@ -1,37 +1,77 @@
-var needle = require("needle");
-var cheerio = require("cheerio");
-var async = require("async");
+const tress = require('tress');
+const needle = require("needle");
+const cheerio = require("cheerio");
+const async = require("async");
+const fs = require('fs');
+const Json2csvParser = require('json2csv').Parser;
 
-var aUrl = [];
-aUrl[0] = "http://lesdomsad.ru/shop/sad/gazonokosilki-kupit-v-kirove/benzinovye/huskvarna/10383.html";
-aUrl[1] = "http://lesdomsad.ru/shop/sad/gazonokosilki-kupit-v-kirove/benzinovye/huskvarna/10386.html";
-aUrl[2] = "http://lesdomsad.ru/shop/sad/gazonokosilki-kupit-v-kirove/benzinovye/huskvarna/11076.html";
+let aUrl = [
+    'http://lesdomsad.ru/shop/benzopily-i-elektropily/huskvarna-benzopily-v-kirove-kupit/10719.html',
+    'http://lesdomsad.ru/shop/benzopily-i-elektropily/huskvarna-benzopily-v-kirove-kupit/10721.html',
+    'http://lesdomsad.ru/shop/benzopily-i-elektropily/huskvarna-benzopily-v-kirove-kupit/10722.html',
+    'http://lesdomsad.ru/shop/benzopily-i-elektropily/huskvarna-benzopily-v-kirove-kupit/10723.html',
+    'http://lesdomsad.ru/shop/benzopily-i-elektropily/huskvarna-benzopily-v-kirove-kupit/jelektropila/10374.html',
+];
+
+const jquery = body => cheerio.load(body);
+
+let products = [];
+
+let parsePage = ($) => {
+    let name = $("#shop-production-view > h1").first().text();
+
+    let categories = $(".breadcrumb").text();
+    let arrCategories = categories.split(' / ').splice([0]);
+
+    let price = $(".price").text();
+    let content = $('.content_item').html();
+    let images = $(".image").find("img").attr("src");
+
+    // let $imageLink = $(".shop-production-view .image a"),
+    //     img = '';
+    // if ($imageLink.length > 0) {
+    //     img = $imageLink.attr("href");
+    // }
 
 
-var q = async.queue(function(url){
-    needle.get(url,function(err,res){
-        if(err) throw(err);
-
-        var $ = cheerio.load(res.body);
-
-        console.log($("#shop-production-view").find("h1").text());
-
-        console.log($(".content_item").find("table").text());
-
-        console.log($(".content_item").find("p").text());
-
-        img = $(".image").find("img");
-
-        img.each(function(i,val){
-            console.log($(val).attr("src"));
-        });
-
+    products.push({
+        name,
+        // categories,
+        arrCategories,
+        content,
+        price,
+        images,
+        // img,
     });
-},10);
+};
 
-var i = 0;
-while(aUrl.length > i)
-{
+let q = tress((url, callback) => {
+    needle.get(url, {  }, (err, res) => {
+        if (err) {
+            throw err;
+        }
+
+        parsePage(jquery(res.body));
+
+        callback();
+    });
+}, 5);
+
+q.drain = () => {
+    // console.log(products);
+
+    fs.writeFile('data.json', JSON.stringify(products), (err) => {
+        if (err) throw err;
+
+        console.log("saved");
+    });
+
+};
+
+for (let i = 0; i < aUrl.length; i++) {
     q.push(aUrl[i]);
-    i++;
 }
+
+
+
+
