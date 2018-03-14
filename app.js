@@ -14,7 +14,11 @@ var q = async.queue(function(url){
 
         var $ = cheerio.load(res.body);
 
-        console.log($("h1").text());
+        console.log($("#shop-production-view").find("h1").text());
+
+        console.log($(".content_item").find("table").text());
+
+        console.log($(".content_item").find("p").text());
 
         img = $(".image").find("img");
 
