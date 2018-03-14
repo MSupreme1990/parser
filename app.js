@@ -1040,7 +1040,7 @@ let q = tress((url, callback) => {
 
         parsePage(jquery(res.body));
 
-        callback();
+        setTimeout(callback, 1000);
     });
 }, 1);
 
